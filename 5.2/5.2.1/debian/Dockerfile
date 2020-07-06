@@ -17,7 +17,8 @@ LABEL plone=$PLONE_VERSION \
     maintainer="Plone Community"
 
 RUN useradd --system -m -d /plone -U -u 500 plone \
- && mkdir -p /plone/instance/ /data/filestorage /data/blobstorage
+ && mkdir -p /plone/instance/ /data/filestorage /data/blobstorage \
+ && chmod -R g=u /etc/passwd
 
 COPY buildout.cfg /plone/instance/
 
@@ -35,8 +36,10 @@ RUN buildDeps="dpkg-dev gcc libbz2-dev libc6-dev libffi-dev libjpeg62-turbo-dev 
  && buildout \
  && ln -s /data/filestorage/ /plone/instance/var/filestorage \
  && ln -s /data/blobstorage /plone/instance/var/blobstorage \
- && find /data  -not -user plone -exec chown plone:plone {} \+ \
- && find /plone -not -user plone -exec chown plone:plone {} \+ \
+ && find /data  -not -user plone -exec chown plone:root {} \+ \
+ && find /plone -not -user plone -exec chown plone:root {} \+ \
+ && find /data  -exec chmod g=u {} \+ \
+ && find /plone -exec chmod g=u {} \+ \
  && rm -rf /Plone* \
  && apt-get purge -y --auto-remove $buildDeps \
  && apt-get install -y --no-install-recommends $runDeps \
@@ -52,6 +55,8 @@ WORKDIR /plone/instance
 
 HEALTHCHECK --interval=1m --timeout=5s --start-period=1m \
   CMD nc -z -w5 127.0.0.1 8080 || exit 1
+
+user 10261164:root
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["start"]
